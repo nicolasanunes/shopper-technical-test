@@ -8,10 +8,10 @@ import {
   HttpException,
   HttpStatus,
   Patch,
+  Param,
 } from '@nestjs/common';
 import { MeasureService } from './measure.service';
 import { CreateMeasureDto } from './dtos/create-measure.dto';
-import { ListMeasureDto } from './dtos/list-measure.dto';
 import { ConfirmMeasureDto } from './dtos/confirm-measure.dto';
 
 @Controller()
@@ -56,10 +56,10 @@ export class MeasureController {
     return this.measureService.confirmMeasure(confirmMeasure);
   }
 
-  @Get()
-  async listAllMeasures(): Promise<ListMeasureDto[]> {
-    return (await this.measureService.findAllMeasures()).map(
-      (measure) => measure,
-    );
+  @Get('/:customer_code/list')
+  listMeasuresByCustomerCode(
+    @Param('customer_code') customerCode: string,
+  ): Promise<object> {
+    return this.measureService.listMeasuresByCustomerCode(customerCode);
   }
 }

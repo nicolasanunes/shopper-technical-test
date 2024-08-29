@@ -11,7 +11,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GoogleAIFileManager } from '@google/generative-ai/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ConfigService } from '@nestjs/config';
-import { ListMeasureDto } from './dtos/list-measure.dto';
 import { ConfirmMeasureDto } from './dtos/confirm-measure.dto';
 
 @Injectable()
@@ -41,6 +40,7 @@ export class MeasureService {
         measure_datetime: createMeasureDto.measure_datetime,
         measure_type: createMeasureDto.measure_type,
         measure_value: measureValue,
+        image_url: url,
       });
 
       throw new HttpException(
@@ -87,6 +87,7 @@ export class MeasureService {
       } else if (isConfirmedMeasure === false) {
         await this.measureRepository.save({
           ...measure,
+          has_confirmed: true,
           confirmed_value: confirmMeasure.confirmed_value,
         });
 
@@ -102,6 +103,40 @@ export class MeasureService {
         {
           error_code: 'MEASURE_NOT_FOUND',
           error_description: 'Leitura não encontrada',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+  }
+
+  async listMeasuresByCustomerCode(customerCode: string): Promise<object> {
+    const measuresByCustomerCode =
+      await this.findMeasuresByCustomerCode(customerCode);
+
+    if (measuresByCustomerCode.length > 0) {
+      // existe
+      const measureObject = measuresByCustomerCode.map((measure) => {
+        return {
+          measure_uuid: measure.measure_uuid,
+          measure_datetime: measure.measure_datetime,
+          measure_type: measure.measure_type,
+          has_confirmed: measure.has_confirmed,
+          image_url: measure.image_url,
+        };
+      });
+
+      throw new HttpException(
+        {
+          customer_code: customerCode,
+          measures: measureObject,
+        },
+        HttpStatus.OK,
+      );
+    } else {
+      throw new HttpException(
+        {
+          error_code: 'MEASURES_NOT_FOUND',
+          error_description: 'Nenhuma leitura encontrada',
         },
         HttpStatus.NOT_FOUND,
       );
@@ -155,10 +190,6 @@ export class MeasureService {
     return measure;
   }
 
-  async findAllMeasures(): Promise<ListMeasureDto[]> {
-    return this.measureRepository.find();
-  }
-
   async verifyMeasureDatetimeType(
     measureDatetime: Date,
     measureType: string,
@@ -208,5 +239,13 @@ export class MeasureService {
     } else {
       return false;
     }
+  }
+
+  async findMeasuresByCustomerCode(
+    customerCode: string,
+  ): Promise<MeasureEntity[]> {
+    return this.measureRepository.find({
+      where: { customer_code: customerCode },
+    });
   }
 }

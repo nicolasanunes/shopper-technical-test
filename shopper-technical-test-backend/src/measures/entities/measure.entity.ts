@@ -22,4 +22,10 @@ export class MeasureEntity {
 
   @Column({ name: 'confirmed_value', nullable: true })
   confirmed_value: number;
+
+  @Column({ name: 'has_confirmed', default: false })
+  has_confirmed: boolean;
+
+  @Column({ name: 'image_url' })
+  image_url: string;
 }
