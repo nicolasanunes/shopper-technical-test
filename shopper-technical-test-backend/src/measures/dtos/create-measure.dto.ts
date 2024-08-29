@@ -8,12 +8,15 @@ import {
 export class CreateMeasureDto {
   @IsString()
   @IsBase64()
+  @IsNotEmpty()
   image: string;
 
   @IsString()
+  @IsNotEmpty()
   customer_code: string;
 
   @IsDateString()
+  @IsNotEmpty()
   measure_datetime: Date;
 
   @IsString()

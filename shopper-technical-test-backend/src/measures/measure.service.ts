@@ -12,6 +12,7 @@ import { GoogleAIFileManager } from '@google/generative-ai/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ConfigService } from '@nestjs/config';
 import { ListMeasureDto } from './dtos/list-measure.dto';
+import { ConfirmMeasureDto } from './dtos/confirm-measure.dto';
 
 @Injectable()
 export class MeasureService {
@@ -68,6 +69,43 @@ export class MeasureService {
       },
       HttpStatus.BAD_REQUEST,
     );
+  }
+
+  async confirmMeasure(confirmMeasure: ConfirmMeasureDto) {
+    const measure = await this.verifyUuidMeasure(confirmMeasure.measure_uuid);
+
+    if (measure !== undefined) {
+      const isConfirmedMeasure = await this.verifyConfirmedMeasure(measure);
+      if (isConfirmedMeasure === true) {
+        throw new HttpException(
+          {
+            error_code: 'CONFIRMATION_DUPLICATE',
+            error_description: 'Leitura do mês já realizada',
+          },
+          HttpStatus.CONFLICT,
+        );
+      } else if (isConfirmedMeasure === false) {
+        await this.measureRepository.save({
+          ...measure,
+          confirmed_value: confirmMeasure.confirmed_value,
+        });
+
+        throw new HttpException(
+          {
+            success: 'true',
+          },
+          HttpStatus.OK,
+        );
+      }
+    } else {
+      throw new HttpException(
+        {
+          error_code: 'MEASURE_NOT_FOUND',
+          error_description: 'Leitura não encontrada',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
   }
 
   // Other functions
@@ -141,5 +179,34 @@ export class MeasureService {
     const url = `${this.configService.get('BASE_URL')}:${this.configService.get('APP_PORT')}/public/uploads/${filename}`;
 
     return url;
+  }
+
+  async verifyUuidMeasure(measureUuid: string): Promise<MeasureEntity> {
+    const isMeasureUuid = await this.measureRepository.findOne({
+      where: {
+        measure_uuid: measureUuid,
+      },
+    });
+
+    if (isMeasureUuid) {
+      return isMeasureUuid;
+    } else {
+      return undefined;
+    }
+  }
+
+  async verifyConfirmedMeasure(measure: MeasureEntity): Promise<boolean> {
+    const isMeasureConfirmed = await this.measureRepository.findOne({
+      where: {
+        measure_uuid: measure.measure_uuid,
+      },
+      select: ['confirmed_value'],
+    });
+
+    if (isMeasureConfirmed) {
+      return true;
+    } else {
+      return false;
+    }
   }
 }
