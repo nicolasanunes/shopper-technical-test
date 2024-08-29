@@ -123,7 +123,6 @@ export class MeasureService {
           await this.findMeasuresByCustomerCode(customerCode);
 
         if (measuresByCustomerCode.length > 0) {
-          // existe
           const measureObject = measuresByCustomerCode.map((measure) => {
             return {
               measure_uuid: measure.measure_uuid,
@@ -260,7 +259,7 @@ export class MeasureService {
       },
     );
     // View the response.
-    console.log(`Upload de imagem para o LLM realizado.`);
+    //console.log(`Upload de imagem para o LLM realizado.`);
 
     const genAI = new GoogleGenerativeAI(
       this.configService.get<string>('GEMINI_API_KEY'),
