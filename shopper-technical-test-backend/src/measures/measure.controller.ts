@@ -9,6 +9,7 @@ import {
   HttpStatus,
   Patch,
   Param,
+  Query,
 } from '@nestjs/common';
 import { MeasureService } from './measure.service';
 import { CreateMeasureDto } from './dtos/create-measure.dto';
@@ -59,7 +60,11 @@ export class MeasureController {
   @Get('/:customer_code/list')
   listMeasuresByCustomerCode(
     @Param('customer_code') customerCode: string,
+    @Query('measure_type') measureType?: string,
   ): Promise<object> {
-    return this.measureService.listMeasuresByCustomerCode(customerCode);
+    return this.measureService.listMeasuresByCustomerCode(
+      customerCode,
+      measureType,
+    );
   }
 }

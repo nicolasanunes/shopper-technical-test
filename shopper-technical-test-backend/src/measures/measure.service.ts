@@ -109,38 +109,129 @@ export class MeasureService {
     }
   }
 
-  async listMeasuresByCustomerCode(customerCode: string): Promise<object> {
-    const measuresByCustomerCode =
-      await this.findMeasuresByCustomerCode(customerCode);
-
-    if (measuresByCustomerCode.length > 0) {
-      // existe
-      const measureObject = measuresByCustomerCode.map((measure) => {
-        return {
-          measure_uuid: measure.measure_uuid,
-          measure_datetime: measure.measure_datetime,
-          measure_type: measure.measure_type,
-          has_confirmed: measure.has_confirmed,
-          image_url: measure.image_url,
-        };
-      });
-
-      throw new HttpException(
-        {
-          customer_code: customerCode,
-          measures: measureObject,
-        },
-        HttpStatus.OK,
-      );
-    } else {
-      throw new HttpException(
-        {
-          error_code: 'MEASURES_NOT_FOUND',
-          error_description: 'Nenhuma leitura encontrada',
-        },
-        HttpStatus.NOT_FOUND,
-      );
+  async listMeasuresByCustomerCode(
+    customerCode: string,
+    measureType: string,
+  ): Promise<object> {
+    if (measureType !== undefined) {
+      measureType = measureType.toLocaleLowerCase();
     }
+
+    switch (measureType) {
+      case undefined:
+        const measuresByCustomerCode =
+          await this.findMeasuresByCustomerCode(customerCode);
+
+        if (measuresByCustomerCode.length > 0) {
+          // existe
+          const measureObject = measuresByCustomerCode.map((measure) => {
+            return {
+              measure_uuid: measure.measure_uuid,
+              measure_datetime: measure.measure_datetime,
+              measure_type: measure.measure_type,
+              has_confirmed: measure.has_confirmed,
+              image_url: measure.image_url,
+            };
+          });
+
+          throw new HttpException(
+            {
+              customer_code: customerCode,
+              measures: measureObject,
+            },
+            HttpStatus.OK,
+          );
+        } else {
+          throw new HttpException(
+            {
+              error_code: 'MEASURES_NOT_FOUND',
+              error_description: 'Nenhuma leitura encontrada',
+            },
+            HttpStatus.NOT_FOUND,
+          );
+        }
+      case 'gas':
+        const measuresByCustomerCodeAndCustomerTypeGas =
+          await this.findMeasureByCustomerCodeAndMeasureType(
+            customerCode,
+            measureType,
+          );
+
+        if (measuresByCustomerCodeAndCustomerTypeGas.length > 0) {
+          // existe
+          const measureObject = measuresByCustomerCodeAndCustomerTypeGas.map(
+            (measure) => {
+              return {
+                measure_uuid: measure.measure_uuid,
+                measure_datetime: measure.measure_datetime,
+                measure_type: measure.measure_type,
+                has_confirmed: measure.has_confirmed,
+                image_url: measure.image_url,
+              };
+            },
+          );
+
+          throw new HttpException(
+            {
+              customer_code: customerCode,
+              measures: measureObject,
+            },
+            HttpStatus.OK,
+          );
+        } else {
+          throw new HttpException(
+            {
+              error_code: 'MEASURES_NOT_FOUND',
+              error_description: 'Nenhuma leitura encontrada',
+            },
+            HttpStatus.NOT_FOUND,
+          );
+        }
+      case 'water':
+        const measuresByCustomerCodeAndCustomerTypeWater =
+          await this.findMeasureByCustomerCodeAndMeasureType(
+            customerCode,
+            measureType,
+          );
+
+        if (measuresByCustomerCodeAndCustomerTypeWater.length > 0) {
+          // existe
+          const measureObject = measuresByCustomerCodeAndCustomerTypeWater.map(
+            (measure) => {
+              return {
+                measure_uuid: measure.measure_uuid,
+                measure_datetime: measure.measure_datetime,
+                measure_type: measure.measure_type,
+                has_confirmed: measure.has_confirmed,
+                image_url: measure.image_url,
+              };
+            },
+          );
+
+          throw new HttpException(
+            {
+              customer_code: customerCode,
+              measures: measureObject,
+            },
+            HttpStatus.OK,
+          );
+        } else {
+          throw new HttpException(
+            {
+              error_code: 'MEASURES_NOT_FOUND',
+              error_description: 'Nenhuma leitura encontrada',
+            },
+            HttpStatus.NOT_FOUND,
+          );
+        }
+    }
+    throw new HttpException(
+      {
+        error_code: 'INVALID_TYPE',
+        error_description: 'Tipo de medição não permitida',
+      },
+      HttpStatus.BAD_REQUEST,
+    );
   }
 
   // Other functions
@@ -246,6 +337,15 @@ export class MeasureService {
   ): Promise<MeasureEntity[]> {
     return this.measureRepository.find({
       where: { customer_code: customerCode },
+    });
+  }
+
+  async findMeasureByCustomerCodeAndMeasureType(
+    customerCode: string,
+    measureType: string,
+  ): Promise<MeasureEntity[]> {
+    return this.measureRepository.find({
+      where: { customer_code: customerCode, measure_type: measureType },
     });
   }
 }
