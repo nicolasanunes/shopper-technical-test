@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { CreateMeasureDto } from './dtos/create-measure.dto';
 
 import { parse } from 'file-type-mime';
@@ -23,9 +23,7 @@ export class MeasureService {
     private readonly configService: ConfigService,
   ) {}
 
-  async createMeasure(
-    createMeasureDto: CreateMeasureDto,
-  ): Promise<CreateMeasureDto | string> {
+  async createMeasure(createMeasureDto: CreateMeasureDto): Promise<object> {
     const isMeasureDateTime = await this.verifyMeasureDatetimeType(
       createMeasureDto.measure_datetime,
       createMeasureDto.measure_type,
@@ -34,17 +32,42 @@ export class MeasureService {
     if (isMeasureDateTime === false) {
       const file = await this.saveBase64ToAFile(createMeasureDto.image);
       const measureValue = await this.uploadFileToLLM(file);
+      const url = await this.generateTemporaryLinkToImage(file.filename);
 
-      return this.measureRepository.save({
+      const createMeasure = await this.measureRepository.save({
         image: file.filename,
         customer_code: createMeasureDto.customer_code,
         measure_datetime: createMeasureDto.measure_datetime,
         measure_type: createMeasureDto.measure_type,
         measure_value: measureValue,
       });
-    } else {
-      return 'Retornar erro caso já exista o registro.';
+
+      throw new HttpException(
+        {
+          image_url: url,
+          measure_value: measureValue,
+          measure_uuid: createMeasure.measure_uuid,
+        },
+        HttpStatus.OK,
+      );
+    } else if (isMeasureDateTime === true) {
+      throw new HttpException(
+        {
+          error_code: 'DOUBLE_REPORT',
+          error_description: 'Leitura do mês já realizada',
+        },
+        HttpStatus.CONFLICT,
+      );
     }
+
+    throw new HttpException(
+      {
+        error_code: 'INVALID_DATA',
+        error_description:
+          'Os dados fornecidos no corpo da requisição são inválidos',
+      },
+      HttpStatus.BAD_REQUEST,
+    );
   }
 
   // Other functions
@@ -58,7 +81,7 @@ export class MeasureService {
 
     writeFileSync(filePath, buffer);
 
-    return { filename, fileMimeType };
+    return { filename, fileMimeType, filePath };
   }
 
   async uploadFileToLLM(file) {
@@ -112,5 +135,11 @@ export class MeasureService {
     } else {
       return false;
     }
+  }
+
+  async generateTemporaryLinkToImage(filename: string): Promise<string> {
+    const url = `${this.configService.get('BASE_URL')}:${this.configService.get('APP_PORT')}/public/uploads/${filename}`;
+
+    return url;
   }
 }

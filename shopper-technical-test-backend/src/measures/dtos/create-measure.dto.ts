@@ -1,4 +1,9 @@
-import { IsBase64, IsDate, IsString } from '@nestjs/class-validator';
+import {
+  IsBase64,
+  IsDateString,
+  IsNotEmpty,
+  IsString,
+} from '@nestjs/class-validator';
 
 export class CreateMeasureDto {
   @IsString()
@@ -8,9 +13,10 @@ export class CreateMeasureDto {
   @IsString()
   customer_code: string;
 
-  @IsDate()
+  @IsDateString()
   measure_datetime: Date;
 
   @IsString()
+  @IsNotEmpty()
   measure_type: string;
 }
