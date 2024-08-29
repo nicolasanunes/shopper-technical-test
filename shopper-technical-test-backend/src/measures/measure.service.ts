@@ -38,7 +38,7 @@ export class MeasureService {
         image: file.filename,
         customer_code: createMeasureDto.customer_code,
         measure_datetime: createMeasureDto.measure_datetime,
-        measure_type: createMeasureDto.measure_type,
+        measure_type: createMeasureDto.measure_type.toLocaleLowerCase(),
         measure_value: measureValue,
         image_url: url,
       });
