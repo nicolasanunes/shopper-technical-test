@@ -11,21 +11,40 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GoogleAIFileManager } from '@google/generative-ai/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ConfigService } from '@nestjs/config';
+import { ListMeasureDto } from './dtos/list-measure.dto';
 
 @Injectable()
 export class MeasureService {
   constructor(
     @InjectRepository(MeasureEntity)
-    private readonly measureEntity: Repository<MeasureEntity>,
+    private readonly measureRepository: Repository<MeasureEntity>,
     @Inject('filePath')
     private readonly filePath: string,
     private readonly configService: ConfigService,
   ) {}
 
-  async createMeasure(createMeasureDto: CreateMeasureDto) {
-    const file = await this.saveBase64ToAFile(createMeasureDto.image);
-    await this.uploadFileToLLM(file);
-    return 'This action adds a new measure';
+  async createMeasure(
+    createMeasureDto: CreateMeasureDto,
+  ): Promise<CreateMeasureDto | string> {
+    const isMeasureDateTime = await this.verifyMeasureDatetimeType(
+      createMeasureDto.measure_datetime,
+      createMeasureDto.measure_type,
+    );
+
+    if (isMeasureDateTime === false) {
+      const file = await this.saveBase64ToAFile(createMeasureDto.image);
+      const measureValue = await this.uploadFileToLLM(file);
+
+      return this.measureRepository.save({
+        image: file.filename,
+        customer_code: createMeasureDto.customer_code,
+        measure_datetime: createMeasureDto.measure_datetime,
+        measure_type: createMeasureDto.measure_type,
+        measure_value: measureValue,
+      });
+    } else {
+      return 'Retornar erro caso já exista o registro.';
+    }
   }
 
   // Other functions
@@ -70,6 +89,28 @@ export class MeasureService {
       },
     ]);
 
-    console.log(result.response.text());
+    const measure = parseInt(result.response.text());
+
+    return measure;
+  }
+
+  async findAllMeasures(): Promise<ListMeasureDto[]> {
+    return this.measureRepository.find();
+  }
+
+  async verifyMeasureDatetimeType(
+    measureDatetime: Date,
+    measureType: string,
+  ): Promise<boolean> {
+    const isMeasureDateTime = await this.measureRepository.findBy({
+      measure_datetime: measureDatetime,
+      measure_type: measureType,
+    });
+
+    if (isMeasureDateTime.length > 0) {
+      return true;
+    } else {
+      return false;
+    }
   }
 }

@@ -6,11 +6,11 @@ export class CreateMeasureDto {
   image: string;
 
   @IsString()
-  customerCode: string;
+  customer_code: string;
 
   @IsDate()
-  measureDatetime: Date;
+  measure_datetime: Date;
 
   @IsString()
-  measureType: string;
+  measure_type: string;
 }
