@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseConfigService } from './database/database-config.service';
 import { MeasureModule } from './measures/measure.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { CustomValidationPipe } from './pipes/validation.pipe';
 
 @Module({
   imports: [
@@ -22,6 +23,6 @@ import { ServeStaticModule } from '@nestjs/serve-static';
     MeasureModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [CustomValidationPipe],
 })
 export class AppModule {}

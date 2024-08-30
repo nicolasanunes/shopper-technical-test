@@ -3,56 +3,40 @@ import {
   Post,
   Body,
   Get,
-  ValidationPipe,
   UsePipes,
   HttpException,
-  HttpStatus,
   Patch,
   Param,
   Query,
+  HttpCode,
 } from '@nestjs/common';
 import { MeasureService } from './measure.service';
 import { CreateMeasureDto } from './dtos/create-measure.dto';
 import { ConfirmMeasureDto } from './dtos/confirm-measure.dto';
+import { CustomValidationPipe } from 'src/pipes/validation.pipe';
+import { ResponseDto } from './dtos/response.dto';
 
 @Controller()
 export class MeasureController {
   constructor(private readonly measureService: MeasureService) {}
 
   @Post('upload')
-  @UsePipes(
-    new ValidationPipe({
-      exceptionFactory: () => {
-        throw new HttpException(
-          {
-            error_code: 'INVALID_DATA',
-            error_description:
-              'Os dados fornecidos no corpo da requisição são inválidos',
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      },
-    }),
-  )
-  createMeasure(@Body() createMeasure: CreateMeasureDto) {
-    return this.measureService.createMeasure(createMeasure);
+  @UsePipes(CustomValidationPipe)
+  @HttpCode(200)
+  async createMeasure(
+    @Body() createMeasure: CreateMeasureDto,
+  ): Promise<ResponseDto | object> {
+    const response = await this.measureService.createMeasure(createMeasure);
+
+    if (response.isValid === true) {
+      return response.responseObject;
+    }
+
+    throw new HttpException(response.responseObject, response.status);
   }
 
   @Patch('confirm')
-  @UsePipes(
-    new ValidationPipe({
-      exceptionFactory: () => {
-        throw new HttpException(
-          {
-            error_code: 'INVALID_DATA',
-            error_description:
-              'Os dados fornecidos no corpo da requisição são inválidos',
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      },
-    }),
-  )
+  @UsePipes(CustomValidationPipe)
   confirmMeasure(@Body() confirmMeasure: ConfirmMeasureDto) {
     return this.measureService.confirmMeasure(confirmMeasure);
   }
