@@ -362,7 +362,7 @@ export class MeasureService {
     return {
       // url: `${this.configService.get('BASE_URL')}:${this.configService.get('APP_PORT')}/public/uploads/${filename}`,
       url: `http://localhost:3000/public/uploads/${filename}`,
-      expires: new Date(Date.now() + 60), // Expira em 24 horas 86400000
+      expires: new Date(Date.now() + 86400000),
     };
   }
 
