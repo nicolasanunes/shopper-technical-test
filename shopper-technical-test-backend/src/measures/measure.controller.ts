@@ -14,7 +14,7 @@ import { MeasureService } from './measure.service';
 import { CreateMeasureDto } from './dtos/create-measure.dto';
 import { ConfirmMeasureDto } from './dtos/confirm-measure.dto';
 import { ResponseDto } from './dtos/response.dto';
-import { CustomValidationPipe } from 'src/pipes/custom-validation.pipe';
+import { CustomValidationPipe } from './../pipes/custom-validation.pipe';
 
 @Controller()
 export class MeasureController {

@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CreateMeasureDto } from './dtos/create-measure.dto';
 
 import { parse, Result } from 'file-type-mime';
-import { writeFileSync } from 'fs';
+import { createReadStream, writeFileSync } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { Repository } from 'typeorm';
 import { MeasureEntity } from './entities/measure.entity';
@@ -23,6 +23,7 @@ import { ResponseDto } from './dtos/response.dto';
 import { Base64SavedFileInterface } from './interfaces/base64-saved-file.interface';
 import { MeasureReturnInterface } from './interfaces/measure-return.interface';
 import * as moment from 'moment';
+import { TemporaryLinkInterface } from './interfaces/temporary-link.interface';
 
 @Injectable()
 export class MeasureService {
@@ -59,7 +60,10 @@ export class MeasureService {
       createMeasureDto.image,
     );
     const measureValue: number = await this.uploadFileToLLM(file);
-    const url: string = await this.generateTemporaryLinkToImage(file.filename);
+    const url: TemporaryLinkInterface = await this.generateTemporaryLinkToImage(
+      file.filename,
+      file.filePath,
+    );
 
     const createMeasure: MeasureEntity = await this.measureRepository.save({
       image: file.filename,
@@ -67,7 +71,7 @@ export class MeasureService {
       measure_datetime: createMeasureDto.measure_datetime,
       measure_type: createMeasureDto.measure_type.toLocaleLowerCase(),
       measure_value: measureValue,
-      image_url: url,
+      image_url: url.url,
     });
 
     const response: ResponseDto = {
@@ -349,10 +353,16 @@ export class MeasureService {
     return false;
   }
 
-  async generateTemporaryLinkToImage(filename: string): Promise<string> {
-    const url: string = `${this.configService.get('BASE_URL')}:${this.configService.get('APP_PORT')}/public/uploads/${filename}`;
+  async generateTemporaryLinkToImage(
+    filename: string,
+    filePath: string,
+  ): Promise<TemporaryLinkInterface> {
+    createReadStream(filePath);
 
-    return url;
+    return {
+      url: `${this.configService.get('BASE_URL')}:${this.configService.get('APP_PORT')}/public/uploads/${filename}`,
+      expires: new Date(Date.now() + 60), // Expira em 24 horas 86400000
+    };
   }
 
   async verifyUuidMeasure(measureUuid: string): Promise<MeasureEntity> {
