@@ -22,6 +22,7 @@ import { ConfirmMeasureDto } from './dtos/confirm-measure.dto';
 import { ResponseDto } from './dtos/response.dto';
 import { Base64SavedFileInterface } from './interfaces/base64-saved-file.interface';
 import { MeasureReturnInterface } from './interfaces/measure-return.interface';
+import * as moment from 'moment';
 
 @Injectable()
 export class MeasureService {
@@ -322,11 +323,26 @@ export class MeasureService {
   ): Promise<boolean> {
     const isMeasureDateTime: MeasureEntity[] =
       await this.measureRepository.findBy({
-        measure_datetime: measureDatetime,
         measure_type: measureType,
       });
 
-    if (isMeasureDateTime.length > 0) {
+    const datetimeMoment: moment.Moment = moment(measureDatetime);
+    const month: number = datetimeMoment.month();
+    const year: number = datetimeMoment.year();
+
+    const measureDatetimeSameMonth: MeasureEntity[] = isMeasureDateTime.filter(
+      (measure) => {
+        const measureDatetimeMoment: moment.Moment = moment(
+          measure.measure_datetime,
+        );
+        return (
+          measureDatetimeMoment.month() === month &&
+          measureDatetimeMoment.year() === year
+        );
+      },
+    );
+
+    if (measureDatetimeSameMonth.length > 0) {
       return true;
     }
 
