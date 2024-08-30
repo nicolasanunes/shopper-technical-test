@@ -20,7 +20,7 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
       // database: this.configService.get<string>('DB_NAME'),
       database: 'db_shopper_technical_test',
       entities: [__dirname + '/../**/*.entity{.js,.ts}'],
-      // synchronize: true,
+      synchronize: true,
     };
   }
 }
