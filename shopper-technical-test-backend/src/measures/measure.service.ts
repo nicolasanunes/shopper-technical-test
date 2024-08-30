@@ -40,7 +40,7 @@ export class MeasureService {
   ): Promise<ResponseDto> {
     const isMeasureDateTime: boolean = await this.verifyMeasureDatetimeType(
       createMeasureDto.measure_datetime,
-      createMeasureDto.measure_type,
+      createMeasureDto.measure_type.toLocaleLowerCase(),
     );
 
     if (isMeasureDateTime === true) {
