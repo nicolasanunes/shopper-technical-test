@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { CreateMeasureDto } from './dtos/create-measure.dto';
 
 import { parse, Result } from 'file-type-mime';
@@ -21,6 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import { ConfirmMeasureDto } from './dtos/confirm-measure.dto';
 import { ResponseDto } from './dtos/response.dto';
 import { Base64SavedFileInterface } from './interfaces/base64-saved-file.interface';
+import { MeasureReturnInterface } from './interfaces/measure-return.interface';
 
 @Injectable()
 export class MeasureService {
@@ -133,125 +134,134 @@ export class MeasureService {
   async listMeasuresByCustomerCode(
     customerCode: string,
     measureType: string,
-  ): Promise<object> {
-    if (measureType !== undefined) {
-      measureType = measureType.toLocaleLowerCase();
+  ): Promise<ResponseDto> {
+    const measuresByCustomerCode: MeasureEntity[] =
+      await this.findMeasuresByCustomerCode(customerCode);
+
+    if (measuresByCustomerCode.length === 0) {
+      const response: ResponseDto = {
+        isValid: false,
+        responseObject: {
+          error_code: 'MEASURES_NOT_FOUND',
+          error_description: 'Nenhuma leitura encontrada',
+        },
+        status: 404,
+      };
+
+      return response;
     }
+
+    let measures: MeasureReturnInterface[];
+    let response: ResponseDto;
 
     switch (measureType) {
       case undefined:
-        const measuresByCustomerCode =
-          await this.findMeasuresByCustomerCode(customerCode);
+        measures = measuresByCustomerCode.map((measure) => {
+          return {
+            measure_uuid: measure.measure_uuid,
+            measure_datetime: measure.measure_datetime,
+            measure_type: measure.measure_type,
+            has_confirmed: measure.has_confirmed,
+            image_url: measure.image_url,
+          };
+        });
 
-        if (measuresByCustomerCode.length > 0) {
-          const measureObject = measuresByCustomerCode.map((measure) => {
-            return {
-              measure_uuid: measure.measure_uuid,
-              measure_datetime: measure.measure_datetime,
-              measure_type: measure.measure_type,
-              has_confirmed: measure.has_confirmed,
-              image_url: measure.image_url,
-            };
-          });
+        response = {
+          responseObject: {
+            customer_code: customerCode,
+            measures: measures,
+          },
+        };
 
-          throw new HttpException(
-            {
-              customer_code: customerCode,
-              measures: measureObject,
-            },
-            HttpStatus.OK,
-          );
-        } else {
-          throw new HttpException(
-            {
-              error_code: 'MEASURES_NOT_FOUND',
-              error_description: 'Nenhuma leitura encontrada',
-            },
-            HttpStatus.NOT_FOUND,
-          );
-        }
+        return response;
       case 'gas':
-        const measuresByCustomerCodeAndCustomerTypeGas =
+        const measuresByCustomerCodeAndCustomerTypeGas: MeasureEntity[] =
           await this.findMeasureByCustomerCodeAndMeasureType(
             customerCode,
             measureType,
           );
 
-        if (measuresByCustomerCodeAndCustomerTypeGas.length > 0) {
-          // existe
-          const measureObject = measuresByCustomerCodeAndCustomerTypeGas.map(
-            (measure) => {
-              return {
-                measure_uuid: measure.measure_uuid,
-                measure_datetime: measure.measure_datetime,
-                measure_type: measure.measure_type,
-                has_confirmed: measure.has_confirmed,
-                image_url: measure.image_url,
-              };
-            },
-          );
-
-          throw new HttpException(
-            {
-              customer_code: customerCode,
-              measures: measureObject,
-            },
-            HttpStatus.OK,
-          );
-        } else {
-          throw new HttpException(
-            {
+        if (measuresByCustomerCodeAndCustomerTypeGas.length === 0) {
+          const response: ResponseDto = {
+            isValid: false,
+            responseObject: {
               error_code: 'MEASURES_NOT_FOUND',
               error_description: 'Nenhuma leitura encontrada',
             },
-            HttpStatus.NOT_FOUND,
-          );
+            status: 404,
+          };
+
+          return response;
         }
+
+        measures = measuresByCustomerCodeAndCustomerTypeGas.map((measure) => {
+          return {
+            measure_uuid: measure.measure_uuid,
+            measure_datetime: measure.measure_datetime,
+            measure_type: measure.measure_type,
+            has_confirmed: measure.has_confirmed,
+            image_url: measure.image_url,
+          };
+        });
+
+        response = {
+          responseObject: {
+            customer_code: customerCode,
+            measures: measures,
+          },
+        };
+
+        return response;
       case 'water':
-        const measuresByCustomerCodeAndCustomerTypeWater =
+        const measuresByCustomerCodeAndCustomerTypeWater: MeasureEntity[] =
           await this.findMeasureByCustomerCodeAndMeasureType(
             customerCode,
             measureType,
           );
 
-        if (measuresByCustomerCodeAndCustomerTypeWater.length > 0) {
-          // existe
-          const measureObject = measuresByCustomerCodeAndCustomerTypeWater.map(
-            (measure) => {
-              return {
-                measure_uuid: measure.measure_uuid,
-                measure_datetime: measure.measure_datetime,
-                measure_type: measure.measure_type,
-                has_confirmed: measure.has_confirmed,
-                image_url: measure.image_url,
-              };
-            },
-          );
-
-          throw new HttpException(
-            {
-              customer_code: customerCode,
-              measures: measureObject,
-            },
-            HttpStatus.OK,
-          );
-        } else {
-          throw new HttpException(
-            {
+        if (measuresByCustomerCodeAndCustomerTypeWater.length === 0) {
+          const response: ResponseDto = {
+            isValid: false,
+            responseObject: {
               error_code: 'MEASURES_NOT_FOUND',
               error_description: 'Nenhuma leitura encontrada',
             },
-            HttpStatus.NOT_FOUND,
-          );
+            status: 404,
+          };
+
+          return response;
         }
+
+        measures = measuresByCustomerCodeAndCustomerTypeWater.map((measure) => {
+          return {
+            measure_uuid: measure.measure_uuid,
+            measure_datetime: measure.measure_datetime,
+            measure_type: measure.measure_type,
+            has_confirmed: measure.has_confirmed,
+            image_url: measure.image_url,
+          };
+        });
+
+        response = {
+          responseObject: {
+            customer_code: customerCode,
+            measures: measures,
+          },
+        };
+
+        return response;
     }
-    throw new HttpException(
-      {
+
+    response = {
+      isValid: false,
+      responseObject: {
         error_code: 'INVALID_TYPE',
         error_description: 'Tipo de medição não permitida',
       },
-      HttpStatus.BAD_REQUEST,
-    );
+      status: 400,
+    };
+
+    return response;
   }
 
   // Other functions

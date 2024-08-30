@@ -50,13 +50,19 @@ export class MeasureController {
   }
 
   @Get('/:customer_code/list')
-  listMeasuresByCustomerCode(
+  async listMeasuresByCustomerCode(
     @Param('customer_code') customerCode: string,
     @Query('measure_type') measureType?: string,
-  ): Promise<object> {
-    return this.measureService.listMeasuresByCustomerCode(
+  ): Promise<ResponseDto | object> {
+    const response = await this.measureService.listMeasuresByCustomerCode(
       customerCode,
-      measureType,
+      measureType?.toLocaleLowerCase(),
     );
+
+    if (response.isValid === false) {
+      throw new HttpException(response.responseObject, response.status);
+    }
+
+    return response.responseObject;
   }
 }
