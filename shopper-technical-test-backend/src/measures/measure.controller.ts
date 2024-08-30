@@ -13,8 +13,8 @@ import {
 import { MeasureService } from './measure.service';
 import { CreateMeasureDto } from './dtos/create-measure.dto';
 import { ConfirmMeasureDto } from './dtos/confirm-measure.dto';
-import { CustomValidationPipe } from 'src/pipes/validation.pipe';
 import { ResponseDto } from './dtos/response.dto';
+import { CustomValidationPipe } from 'src/pipes/custom-validation.pipe';
 
 @Controller()
 export class MeasureController {
@@ -28,17 +28,25 @@ export class MeasureController {
   ): Promise<ResponseDto | object> {
     const response = await this.measureService.createMeasure(createMeasure);
 
-    if (response.isValid === true) {
-      return response.responseObject;
+    if (response.isValid === false) {
+      throw new HttpException(response.responseObject, response.status);
     }
 
-    throw new HttpException(response.responseObject, response.status);
+    return response.responseObject;
   }
 
   @Patch('confirm')
   @UsePipes(CustomValidationPipe)
-  confirmMeasure(@Body() confirmMeasure: ConfirmMeasureDto) {
-    return this.measureService.confirmMeasure(confirmMeasure);
+  async confirmMeasure(
+    @Body() confirmMeasure: ConfirmMeasureDto,
+  ): Promise<ResponseDto | object> {
+    const response = await this.measureService.confirmMeasure(confirmMeasure);
+
+    if (response.isValid === false) {
+      throw new HttpException(response.responseObject, response.status);
+    }
+
+    return response.responseObject;
   }
 
   @Get('/:customer_code/list')

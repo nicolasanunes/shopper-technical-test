@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseConfigService } from './database/database-config.service';
 import { MeasureModule } from './measures/measure.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
-import { CustomValidationPipe } from './pipes/validation.pipe';
+import { CustomValidationPipe } from './pipes/custom-validation.pipe';
 
 @Module({
   imports: [

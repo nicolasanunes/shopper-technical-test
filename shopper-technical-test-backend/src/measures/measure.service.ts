@@ -79,42 +79,55 @@ export class MeasureService {
     return response;
   }
 
-  async confirmMeasure(confirmMeasure: ConfirmMeasureDto) {
-    const measure = await this.verifyUuidMeasure(confirmMeasure.measure_uuid);
+  async confirmMeasure(
+    confirmMeasure: ConfirmMeasureDto,
+  ): Promise<ResponseDto> {
+    const measure: MeasureEntity = await this.verifyUuidMeasure(
+      confirmMeasure.measure_uuid,
+    );
 
-    if (measure !== undefined) {
-      const isConfirmedMeasure = await this.verifyConfirmedMeasure(measure);
-      if (isConfirmedMeasure === true) {
-        throw new HttpException(
-          {
-            error_code: 'CONFIRMATION_DUPLICATE',
-            error_description: 'Leitura do mês já realizada',
-          },
-          HttpStatus.CONFLICT,
-        );
-      } else if (isConfirmedMeasure === false) {
-        await this.measureRepository.save({
-          ...measure,
-          has_confirmed: true,
-          confirmed_value: confirmMeasure.confirmed_value,
-        });
-
-        throw new HttpException(
-          {
-            success: 'true',
-          },
-          HttpStatus.OK,
-        );
-      }
-    } else {
-      throw new HttpException(
-        {
+    if (measure === undefined) {
+      const response: ResponseDto = {
+        isValid: false,
+        responseObject: {
           error_code: 'MEASURE_NOT_FOUND',
           error_description: 'Leitura não encontrada',
         },
-        HttpStatus.NOT_FOUND,
-      );
+        status: 404,
+      };
+
+      return response;
     }
+
+    const isConfirmedMeasure: boolean =
+      await this.verifyConfirmedMeasure(measure);
+
+    if (isConfirmedMeasure === true) {
+      const response: ResponseDto = {
+        isValid: false,
+        responseObject: {
+          error_code: 'CONFIRMATION_DUPLICATE',
+          error_description: 'Leitura do mês já realizada',
+        },
+        status: 409,
+      };
+
+      return response;
+    }
+
+    await this.measureRepository.save({
+      ...measure,
+      has_confirmed: true,
+      confirmed_value: confirmMeasure.confirmed_value,
+    });
+
+    const response: ResponseDto = {
+      responseObject: {
+        success: 'true',
+      },
+    };
+
+    return response;
   }
 
   async listMeasuresByCustomerCode(
@@ -317,7 +330,7 @@ export class MeasureService {
   }
 
   async verifyUuidMeasure(measureUuid: string): Promise<MeasureEntity> {
-    const isMeasureUuid = await this.measureRepository.findOne({
+    const isMeasureUuid: MeasureEntity = await this.measureRepository.findOne({
       where: {
         measure_uuid: measureUuid,
       },
@@ -325,24 +338,25 @@ export class MeasureService {
 
     if (isMeasureUuid) {
       return isMeasureUuid;
-    } else {
-      return undefined;
     }
+
+    return undefined;
   }
 
   async verifyConfirmedMeasure(measure: MeasureEntity): Promise<boolean> {
-    const isMeasureConfirmed = await this.measureRepository.findOne({
-      where: {
-        measure_uuid: measure.measure_uuid,
-      },
-      select: ['confirmed_value'],
-    });
+    const isMeasureConfirmed: MeasureEntity =
+      await this.measureRepository.findOne({
+        where: {
+          measure_uuid: measure.measure_uuid,
+        },
+        select: ['confirmed_value'],
+      });
 
     if (isMeasureConfirmed) {
       return true;
-    } else {
-      return false;
     }
+
+    return false;
   }
 
   async findMeasuresByCustomerCode(
